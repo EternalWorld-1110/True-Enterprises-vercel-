@@ -1,26 +1,8 @@
 import express from 'express';
-import { supabase } from '../lib/supabase.ts';
-import jwt from 'jsonwebtoken';
+import { supabase } from '../lib/supabase';
+import { authMiddleware, adminMiddleware } from '../middleware/auth';
 
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
-
-// Middleware to verify admin token
-const verifyAdmin = (req: any, res: any, next: any) => {
-  const token = req.headers.authorization?.split(' ')[1];
-  if (!token) return res.status(401).json({ error: 'Unauthorized' });
-
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
-    if (decoded.role !== 'admin') {
-      return res.status(403).json({ error: 'Access denied. Admins only.' });
-    }
-    req.user = decoded;
-    next();
-  } catch (err) {
-    return res.status(401).json({ error: 'Invalid token' });
-  }
-};
 
 // Create a new lead (Public)
 router.post('/', async (req, res) => {
@@ -55,7 +37,7 @@ router.post('/', async (req, res) => {
 });
 
 // Fetch all leads (Admin only)
-router.get('/', verifyAdmin, async (req, res) => {
+router.get('/', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('leads')
@@ -70,7 +52,7 @@ router.get('/', verifyAdmin, async (req, res) => {
 });
 
 // Update lead status (Admin only)
-router.patch('/:id', verifyAdmin, async (req, res) => {
+router.patch('/:id', authMiddleware, adminMiddleware, async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
 

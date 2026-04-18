@@ -2,12 +2,12 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
-import authRoutes from './src/server/routes/auth.ts';
-import laptopRoutes from './src/server/routes/laptops.ts';
-import offerRoutes from './src/server/routes/offers.ts';
-import leadRoutes from './src/server/routes/leads.ts';
-import newsRoutes from './src/server/routes/news.ts';
-import { supabase } from './src/server/lib/supabase.ts';
+import authRoutes from '../src/server/routes/auth';
+import laptopRoutes from '../src/server/routes/laptops';
+import offerRoutes from '../src/server/routes/offers';
+import leadRoutes from '../src/server/routes/leads';
+import newsRoutes from '../src/server/routes/news';
+import { supabase } from '../src/server/lib/supabase';
 
 dotenv.config();
 
@@ -26,6 +26,11 @@ app.use('/api/laptops', laptopRoutes);
 app.use('/api/offers', offerRoutes);
 app.use('/api/leads', leadRoutes);
 app.use('/api/news', newsRoutes);
+
+// Ping check for basic server health (no DB)
+app.get('/api/ping', (req, res) => {
+  res.json({ pong: true, time: new Date().toISOString() });
+});
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -83,18 +88,8 @@ app.use('/api', async (req, res, next) => {
   next();
 });
 
-// Production Static Serving
-if (process.env.NODE_ENV === 'production' || process.env.VERCEL === '1') {
-  const distPath = path.join(process.cwd(), 'dist');
-  app.use(express.static(distPath));
-  // Note: Vercel routing handles the fallback to index.html via vercel.json rewrites
-  // but we keep this for local production testing
-  app.get('*', (req, res) => {
-    if (res.headersSent) return;
-    res.sendFile(path.join(distPath, 'index.html'));
-  });
-} else {
-  // Development Vite Server (Lazy load to avoid production dependency issues)
+// Development Vite Server (Lazy load to avoid production dependency issues)
+if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
   const setupVite = async () => {
     try {
       const { createServer: createViteServer } = await import('vite');

@@ -30,6 +30,9 @@ export default function Laptops() {
   const fetchLaptops = async () => {
     try {
       const res = await fetch('/api/laptops');
+      if (!res.ok) {
+        throw new Error(`Server returned ${res.status}: ${res.statusText}`);
+      }
       const data = await res.json();
       if (Array.isArray(data)) {
         setLaptops(data);
