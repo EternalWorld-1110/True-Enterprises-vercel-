@@ -1,0 +1,54 @@
+{
+  "entities": {
+    "Laptop": {
+      "title": "Laptop",
+      "description": "Represents a second-hand laptop for sale.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "The brand and model of the laptop." },
+        "price": { "type": "number", "description": "The selling price in local currency." },
+        "specifications": { "type": "string", "description": "Technical details (CPU, RAM, Storage, etc.)." },
+        "condition": { "type": "string", "description": "Physical condition (e.g., Excellent, Good, Fair)." },
+        "imageUrl": { "type": "string", "format": "url", "description": "Link to an image of the laptop." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Timestamp of when the listing was created." }
+      },
+      "required": ["name", "price", "specifications", "condition", "imageUrl", "createdAt"]
+    },
+    "Offer": {
+      "title": "Offer",
+      "description": "Marketing offer to be displayed on the homepage banner.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "description": "The catchy title of the offer." },
+        "description": { "type": "string", "description": "Details about the discount or deal." },
+        "active": { "type": "boolean", "description": "Whether the offer is currently visible." }
+      },
+      "required": ["title", "description", "active"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Extended user data for authentication and roles.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID." },
+        "email": { "type": "string", "format": "email", "description": "User email address." },
+        "role": { "type": "string", "enum": ["admin", "customer"], "description": "Access level of the user." }
+      },
+      "required": ["uid", "email", "role"]
+    }
+  },
+  "firestore": {
+    "/laptops/{laptopId}": {
+      "schema": "Laptop",
+      "description": "Collection of available second-hand laptops."
+    },
+    "/offers/{offerId}": {
+      "schema": "Offer",
+      "description": "Active and inactive promotional banners."
+    },
+    "/users/{uid}": {
+      "schema": "UserProfile",
+      "description": "User profiles and roles."
+    }
+  }
+}
