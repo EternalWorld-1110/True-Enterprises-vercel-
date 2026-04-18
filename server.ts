@@ -34,26 +34,42 @@ app.get('/api/health', (req, res) => {
 
 // Async setup (Database seeding)
 const initPromise = (async () => {
-  if (process.env.VERCEL === '1') return; // Skip seeding on Vercel deployment by default or handle differently
   try {
-    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) return;
-    const { data } = await supabase.from('users').select('id').limit(1);
+    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.warn('[Seed] Skipping seeding: Missing Supabase environment variables');
+      return;
+    }
+    const { data, error } = await supabase.from('users').select('id').limit(1);
+    
+    if (error) {
+      console.error('[Seed] Error checking users table:', error.message);
+      return;
+    }
+
     if (!data || data.length === 0) {
+      console.log('[Seed] No users found. Initializing admin account...');
       const bcrypt = await import('bcryptjs');
       const hashedPassword = await bcrypt.default.hash('password123', 10);
-      await supabase.from('users').insert([{
+      const { error: insertError } = await supabase.from('users').insert([{
         username: 'admin',
         password: hashedPassword,
         role: 'admin',
         email: 'admin@trueenterprises.com'
       }]);
+      
+      if (insertError) {
+        console.error('[Seed] Failed to create admin user:', insertError.message);
+      } else {
+        console.log('[Seed] Admin account created successfully (admin / password123)');
+      }
+
       await supabase.from('laptops').insert([{
         name: 'Dell Latitude 7490',
         price: 35000,
         specifications: 'Core i7 8th Gen, 16GB RAM, 512GB SSD',
         condition: 'Excellent',
         imageUrl: 'https://images.unsplash.com/photo-1593642632823-8f785ba67e45?auto=format&fit=crop&q=80&w=800',
-        createdAt: new Date().toISOString()
+        created_at: new Date().toISOString()
       }]);
     }
   } catch (err) {

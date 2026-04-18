@@ -50,8 +50,12 @@ export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
+  // Confirmation state
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string, type: 'laptop' | 'news' | 'offer' } | null>(null);
+
   // Form states
   const [isAddingNews, setIsAddingNews] = useState(false);
+  const [editingNews, setEditingNews] = useState<any | null>(null);
   const [newsForm, setNewsForm] = useState({
     title: '', category: 'Hardware', summary: '', imageUrl: '', videoUrl: ''
   });
@@ -206,19 +210,30 @@ export default function AdminDashboard() {
   };
 
   const handleDeleteLaptop = async (id: string) => {
-    // Custom confirm would be better, but for now we'll use a better UI pattern later
-    if (!window.confirm('Are you sure you want to delete this laptop?')) return;
+    setDeleteConfirm({ id, type: 'laptop' });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteConfirm) return;
+    const { id, type } = deleteConfirm;
+    
     try {
-      const res = await fetch(`/api/laptops/${id}`, {
+      const endpoint = type === 'laptop' ? `/api/laptops/${id}` : type === 'news' ? `/api/news/${id}` : `/api/offers/${id}`;
+      const res = await fetch(endpoint, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
         fetchData();
-        showSuccess('Laptop removed');
+        showSuccess(`${type.charAt(0).toUpperCase() + type.slice(1)} removed successfully`);
+      } else {
+        showError(`Failed to delete ${type}`);
       }
     } catch (err) {
       console.error('Delete failed');
+      showError('Network error during deletion');
+    } finally {
+      setDeleteConfirm(null);
     }
   };
 
@@ -252,8 +267,11 @@ export default function AdminDashboard() {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const res = await fetch('/api/news', {
-        method: 'POST',
+      const url = editingNews ? `/api/news/${editingNews.id}` : '/api/news';
+      const method = editingNews ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
         headers: { 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
@@ -262,15 +280,28 @@ export default function AdminDashboard() {
       });
       if (res.ok) {
         setIsAddingNews(false);
+        setEditingNews(null);
         setNewsForm({ title: '', category: 'Hardware', summary: '', imageUrl: '', videoUrl: '' });
         fetchData();
-        showSuccess('News article published to Tech Hub');
+        showSuccess(editingNews ? 'News article updated' : 'News article published to Tech Hub');
       }
     } catch (err) {
       showError('Failed to publish news');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const openEditNews = (item: any) => {
+    setEditingNews(item);
+    setNewsForm({
+      title: item.title,
+      category: item.category,
+      summary: item.summary,
+      imageUrl: item.imageUrl,
+      videoUrl: item.videoUrl || ''
+    });
+    setIsAddingNews(true);
   };
 
   const openEditOffer = (offer: Offer) => {
@@ -347,10 +378,10 @@ export default function AdminDashboard() {
 
           <nav className="space-y-4">
             {[
-              { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-              { id: 'leads', label: 'Leads Report', icon: FileText },
-              { id: 'laptops', label: 'Inventory', icon: ShoppingBag },
-              { id: 'offers', label: 'Promotions', icon: Bell },
+              { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
+              { id: 'leads', label: 'Client Enquiries', icon: FileText },
+              { id: 'laptops', label: 'Stock Management', icon: ShoppingBag },
+              { id: 'offers', label: 'Promo Banners', icon: Bell },
               { id: 'news', label: 'Tech Hub', icon: Newspaper },
               { id: 'admins', label: 'Admin Team', icon: Users2 },
             ].map((item) => (
@@ -448,6 +479,26 @@ export default function AdminDashboard() {
             )}
           </AnimatePresence>
 
+          {/* News Table/Cards */}
+          <AnimatePresence>
+            {deleteConfirm && (
+              <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setDeleteConfirm(null)} className="absolute inset-0 bg-brand-dark/80 backdrop-blur-sm" />
+                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="relative w-full max-w-sm bg-white rounded-[40px] p-8 text-center">
+                  <div className="w-16 h-16 bg-rose-50 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                    <Trash2 className="w-8 h-8 text-rose-500" />
+                  </div>
+                  <h3 className="text-xl font-black text-brand-dark mb-2 uppercase">Confirm Removal?</h3>
+                  <p className="text-brand-grey text-sm font-medium mb-8 italic">This action cannot be undone and will permanently erase this record from the database.</p>
+                  <div className="flex gap-4">
+                    <button onClick={() => setDeleteConfirm(null)} className="flex-1 py-4 font-black text-brand-grey uppercase tracking-widest text-xs">Back</button>
+                    <button onClick={confirmDelete} className="flex-1 bg-rose-500 text-white rounded-2xl py-4 font-black uppercase tracking-widest text-xs shadow-xl shadow-rose-500/20">Delete Forever</button>
+                  </div>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
+
           {activeTab === 'laptops' && (
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
@@ -456,8 +507,8 @@ export default function AdminDashboard() {
             >
               <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
                 <div>
-                  <h1 className="text-4xl font-black text-brand-dark">Laptop Inventory</h1>
-                  <p className="text-brand-grey font-medium mt-2">Maintain your catalog of pre-owned high-performance machines.</p>
+                  <h1 className="text-4xl font-black text-brand-dark">Stock Management</h1>
+                  <p className="text-brand-grey font-medium mt-2">Update your available machine stock, pricing, and health conditions.</p>
                 </div>
                 <button 
                   onClick={() => {
@@ -977,8 +1028,8 @@ export default function AdminDashboard() {
                           <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-50">
                              <span className="text-[10px] font-bold text-brand-grey">{new Date(item.publishedAt).toLocaleDateString()}</span>
                              <div className="flex gap-2">
-                                <button className="p-2 text-brand-grey hover:text-brand-primary"><Edit3 className="w-4 h-4" /></button>
-                                <button className="p-2 text-brand-grey hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
+                                <button onClick={() => openEditNews(item)} className="p-2 text-brand-grey hover:text-brand-primary transition-colors"><Edit3 className="w-4 h-4" /></button>
+                                <button onClick={() => setDeleteConfirm({ id: item.id, type: 'news' })} className="p-2 text-brand-grey hover:text-rose-500 transition-colors"><Trash2 className="w-4 h-4" /></button>
                              </div>
                           </div>
                        </div>
@@ -991,8 +1042,8 @@ export default function AdminDashboard() {
                     <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
                       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsAddingNews(false)} className="absolute inset-0 bg-brand-dark/60 backdrop-blur-md" />
                       <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="relative w-full max-w-2xl bg-white rounded-[40px] shadow-2xl p-10 max-h-[90vh] overflow-y-auto">
-                         <h2 className="text-3xl font-black mb-8 px-2 border-l-4 border-brand-accent uppercase italic">Publish News</h2>
-                         <form onSubmit={handleNewsSubmit} className="space-y-6">
+                        <h2 className="text-3xl font-black mb-8 px-2 border-l-4 border-brand-accent uppercase italic">{editingNews ? 'Update Article' : 'Publish News'}</h2>
+                        <form onSubmit={handleNewsSubmit} className="space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                <div>
                                   <label className="text-[10px] font-black uppercase text-brand-grey mb-2 block tracking-widest">Headline</label>
