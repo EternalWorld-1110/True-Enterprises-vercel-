@@ -6,6 +6,12 @@ dotenv.config();
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
 
+console.log('[Supabase] Checking env:', { 
+  hasUrl: !!supabaseUrl, 
+  hasKey: !!supabaseKey,
+  env: process.env.NODE_ENV
+});
+
 if (!supabaseUrl || !supabaseKey) {
   console.error('[Supabase] Missing environment variables. Please set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.');
 }

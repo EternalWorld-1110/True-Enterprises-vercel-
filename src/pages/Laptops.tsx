@@ -40,9 +40,9 @@ export default function Laptops() {
       } else {
         setErrorStatus(data.error || 'Failed to sync inventory');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to fetch laptops:', err);
-      setErrorStatus('Network connection error');
+      setErrorStatus(`Network Error: ${err.message || 'Unknown connection problem'}`);
     } finally {
       setLoading(false);
     }
@@ -206,14 +206,23 @@ export default function Laptops() {
                 <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
                   <AlertCircle className="w-10 h-10 text-red-500" />
                 </div>
-                <h3 className="text-2xl font-bold text-red-900 mb-2">Inventory Sync Failed</h3>
-                <p className="text-red-700/70 font-medium">{errorStatus}</p>
-                <button 
-                  onClick={() => window.location.reload()}
-                  className="mt-8 button-premium bg-brand-dark text-white px-8 py-3"
-                >
-                  Retry Connection
-                </button>
+                <h3 className="text-2xl font-bold text-red-900 mb-2">Inventory Sync Failed (v1.3.0)</h3>
+                <p className="text-red-700/70 font-medium whitespace-pre-wrap">{errorStatus}</p>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
+                  <button 
+                    onClick={() => window.location.reload()}
+                    className="button-premium bg-brand-dark text-white px-8 py-3"
+                  >
+                    Retry Connection
+                  </button>
+                  <a 
+                    href="/api/health" 
+                    target="_blank"
+                    className="button-premium bg-white text-brand-dark border border-slate-200 px-8 py-3"
+                  >
+                    Check System Health
+                  </a>
+                </div>
               </div>
             ) : filteredLaptops.length === 0 ? (
               <div className="text-center py-32 glass-card rounded-[40px] border-dashed border-2 border-slate-200">

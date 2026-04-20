@@ -21,20 +21,41 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // API Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/laptops', laptopRoutes);
-app.use('/api/offers', offerRoutes);
-app.use('/api/leads', leadRoutes);
-app.use('/api/news', newsRoutes);
+const mountRouter = (path: string, router: any) => {
+  app.use(path, router);
+  app.use(path.replace('/api', ''), router); // Also mount without /api prefix for Vercel
+};
+
+mountRouter('/api/auth', authRoutes);
+mountRouter('/api/laptops', laptopRoutes);
+mountRouter('/api/offers', offerRoutes);
+mountRouter('/api/leads', leadRoutes);
+mountRouter('/api/news', newsRoutes);
 
 // Ping check for basic server health (no DB)
 app.get('/api/ping', (req, res) => {
   res.json({ pong: true, time: new Date().toISOString() });
 });
 
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok' });
+// Health check with DB verification
+app.get('/api/health', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('laptops').select('id').limit(1);
+    if (error) throw error;
+    res.json({ 
+      status: 'ok', 
+      db: 'connected',
+      tables: !!data,
+      env: process.env.NODE_ENV
+    });
+  } catch (err: any) {
+    res.status(500).json({ 
+      status: 'error', 
+      db: 'failed', 
+      error: err.message,
+      hint: 'Check SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY'
+    });
+  }
 });
 
 // Async setup (Database seeding)
