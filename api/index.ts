@@ -2,12 +2,12 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
-import authRoutes from '../src/server/routes/auth';
-import laptopRoutes from '../src/server/routes/laptops';
-import offerRoutes from '../src/server/routes/offers';
-import leadRoutes from '../src/server/routes/leads';
-import newsRoutes from '../src/server/routes/news';
-import { supabase } from '../src/server/lib/supabase';
+import authRoutes from '../src/server/routes/auth.js';
+import laptopRoutes from '../src/server/routes/laptops.js';
+import offerRoutes from '../src/server/routes/offers.js';
+import leadRoutes from '../src/server/routes/leads.js';
+import newsRoutes from '../src/server/routes/news.js';
+import { supabase } from '../src/server/lib/supabase.js';
 
 dotenv.config();
 

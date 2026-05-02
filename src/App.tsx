@@ -9,7 +9,7 @@ import Laptops from './pages/Laptops';
 import Login from './pages/Login';
 import AdminDashboard from './pages/AdminDashboard';
 import { AuthProvider } from './context/AuthContext';
-import ProtectedRoute from './components/ProtectedRoute';
+import ProtectedRoute from './server/lib/middleware/ProtectedRoute';
 
 export default function App() {
   return (
